@@ -1,68 +1,7 @@
-import yfinance as yf
-import pandas as pd
-import numpy as np
-import tensorflow as tf
-from sklearn.preprocessing import MinMaxScaler
-from sklearn.model_selection import train_test_split
+Dieses Programm dient zur Vorhersage der zukünftigen Aktienpreise von Apple (Symbol 'AAPL') mithilfe von Machine Learning.
 
-symbol = 'AAPL'
-data = yf.download(symbol, start='2010-01-01')
+Zunächst werden historische Aktiendaten von Yahoo Finance heruntergeladen und vorverarbeitet. Dann werden verschiedene Funktionen zur Merkmalsextraktion und Normalisierung der Daten verwendet.
 
-# Preprocess data
-data['Close'] = data['Adj Close']
-data = data.drop(['Adj Close'], axis=1)
+Ein LSTM-Modell wird trainiert, um die zukünftigen Aktienpreise von AAPL vorherzusagen. Das Modell wird mit historischen Daten trainiert und validiert, und schließlich wird es verwendet, um den nächsten Aktienpreis vorherzusagen.
 
-# Feature engineering
-data['SMA'] = data['Close'].rolling(window=10).mean()
-
-# Data normalization
-scaler = MinMaxScaler()
-data_scaled = scaler.fit_transform(data.dropna())
-
-# Prepare input and output for LSTM mode
-lookback = 5
-X = []
-y = []
-
-for i in range(lookback, len(data_scaled)):
-    X.append(data_scaled[i - lookback:i, :])
-    y.append(data_scaled[i, 3])
-
-X, y = np.array(X), np.array(y)
-
-# Train-test split
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-
-# Define LSTM model
-model = tf.keras.models.Sequential([
-    tf.keras.layers.LSTM(50, return_sequences=True, input_shape=(X_train.shape[1], X_train.shape[2])),
-    tf.keras.layers.LSTM(50, return_sequences=False),
-    tf.keras.layers.Dense(25),
-    tf.keras.layers.Dense(1)
-])
-
-# Compile and train the model
-model.compile(optimizer='adam', loss='mean_squared_error')
-model.fit(X_train, y_train, batch_size=64, epochs=100, validation_data=(X_test, y_test))
-
-# Real-time prediction
-def predict_next_price(symbol, model, scaler, lookback):
-    data = yf.download(symbol, start='2010-01-01')
-    data['Close'] = data['Adj Close']
-    data = data.drop(['Adj Close'], axis=1)
-    data['SMA'] = data['Close'].rolling(window=10).mean()
-    data_scaled = scaler.transform(data.dropna())
-
-    X_new = data_scaled[-lookback:]
-    X_new = X_new.reshape((1, X_new.shape[0], X_new.shape[1]))
-    y_new_pred = model.predict(X_new)
-
-    # Create dummy array with the same shape as the original data
-    dummy_array = np.zeros((1, data_scaled.shape[1]))
-    dummy_array[:, 3] = y_new_pred[:, 0]  # Replace the 'Close' column with predicted value
-    inverse_transformed = scaler.inverse_transform(dummy_array)
-
-    return inverse_transformed[0][3]
-
-next_price = predict_next_price(symbol, model, scaler, lookback)
-print("Next price prediction:", next_price)
+Das Programm kann auch angepasst werden, um Aktien anderer Unternehmen vorherzusagen, indem man einfach das 'symbol' ändert. Es ist wichtig zu beachten, dass die Vorhersage keine Garantie für zukünftige Aktienpreise darstellt und nur als ein Hinweis auf mögliche Preisänderungen angesehen werden sollte.
