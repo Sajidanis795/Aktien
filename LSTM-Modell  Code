@@ -59,7 +59,8 @@ def predict_next_price(symbol, model, scaler, lookback):
 
     # Create dummy array with the same shape as the original data
     dummy_array = np.zeros((1, data_scaled.shape[1]))
-    dummy_array[:, 3] = y_new_pred[:, 0]  # Replace the 'Close' column with predicted value
+    dummy_array[:, 3] = y_new_pred[:, 0] 
+    # Replace the 'Close' column with predicted value
     inverse_transformed = scaler.inverse_transform(dummy_array)
 
     return inverse_transformed[0][3]
